@@ -1,18 +1,75 @@
-%% Open Image
+clear;
+close all;
+clc;
+
+%% inputs
+maskSize = 3; %should be odd
 
 
 
-%% Resample Pixels
 
 
+%%
+disp('IMAGE PROCESSOR');
+disp('Select Folder:');
+folder = uigetdir();
+files = FolderStructureRecursion(folder, false);
+disp(['Found ',size(files,1), ' files.']);
 
-%% Output Image
+if ~exist([folder,'\processed\'],'dir')
+    mkdir([folder,'\processed\']);
+end
 
+%% for each image process it
+for f = 1:size(files,1)
 
+    %% Open Image
+    [path,name,ext] = fileparts(files{f});
+    if (~(strcmp(ext,'.jpg') || strcmp(ext,'.png')))
+        continue;
+    end
+    disp(['Processing ', name,ext,'...']);
+    image = imread(files{f});
 
-%% Display Image
+    %% crop image
+    %image = imcrop(image);
+    if exist([folder,'\cropdata.mat'],'file')
+        load([folder,'\cropdata.mat']);
+        image = image(rect(2):rect(2)+rect(4),rect(1):rect(1)+rect(3),:);
+        original = image;
+    else
+        fig1 = figure;
+        [image,rect] = imcrop(image);
+        original = image;
+        close(fig1);
+        rect = round(rect);
+        save([folder,'\cropdata.mat'],'rect');
+    end
 
+    %% Resample Pixels
+    % upsample and resample to double data type
+    image = im2double(image);
+    image = rgb2gray(image);
+    image = impyramid(image,'expand');
 
+    %% process image
+    image = medfilt2(image,[maskSize maskSize]);
+    image = histeq(image);
+
+    %% Output Image
+
+    finalImg(:,:,:,f) = ind2rgb(gray2ind(image,255),jet(255));
+
+    %% Display Image
+    %imshow(finalImg);
+    imwrite(image(:,:,:),[folder,'\processed\Gray_',name,'.jpg'],'jpg');
+    imwrite(finalImg(:,:,:,f),[folder,'\processed\RGB_',name,'.jpg'],'jpg');
+    imwrite(original(:,:,:),[folder,'\processed\Original_',name,'.jpg'],'jpg');
+end
+%% display results
+implay(finalImg,2);
+set(findall(0,'tag','spcui_scope_framework'),'position',[150 10 300 960]);
+disp('FINISHED!');
 
 %%
 %{
