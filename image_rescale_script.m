@@ -39,7 +39,8 @@ for f = 1:size(files,1)
         original = image;
     else
         fig1 = figure;
-        [image,rect] = imcrop(image);
+        [~,rect] = imcrop(image);
+        image = image(rect(2):rect(2)+rect(4),rect(1):rect(1)+rect(3),:);
         original = image;
         close(fig1);
         rect = round(rect);
